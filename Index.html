@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APEXCARE | مراقبة تدفق المرضى</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   ROOT VARIABLES & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --bg-deep:      #0d1117;
+  --bg-card:      #161b22;
+  --bg-row:       #1c2230;
+  --bg-row-alt:   #1a1f2e;
+  --border:       #2a3142;
+  --border-light: #323d54;
+  
+  --blue:         #2196F3;
+  --blue-dark:    #1565C0;
+  --blue-glow:    rgba(33,150,243,0.25);
+  --orange:       #FF9800;
+  --orange-dark:  #E65100;
+  --orange-glow:  rgba(255,152,0,0.25);
+  --green:        #4CAF50;
+  --green-dark:   #1B5E20;
+  --green-glow:   rgba(76,175,80,0.25);
+  --red:          #f44336;
+  --purple:       #7B52AB;
+  --teal:         #3DBDAD;
+  
+  --text-primary:  #e6edf3;
+  --text-secondary:#8b949e;
+  --text-muted:    #484f58;
+  
+  --radius:       8px;
+  --radius-sm:    5px;
+  --font:         'IBM Plex Sans Arabic', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: var(--font);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ═══════════════════════════════════════════════
+   TOP HEADER BAR
+═══════════════════════════════════════════════ */
+.header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  gap: 12px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--teal), var(--purple));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: white;
+  flex-shrink: 0;
+}
+
+.brand-text { line-height: 1.2; }
+.brand-name { font-size: 15px; font-weight: 700; color: var(--teal); letter-spacing: 1px; }
+.brand-sub  { font-size: 11px; color: var(--text-secondary); }
+
+.header-stats {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.stat-pill {
+  background: var(--bg-row);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.stat-pill .num {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.stat-pill.blue  { border-color: var(--blue);   }
+.stat-pill.green { border-color: var(--green);  }
+.stat-pill.orange{ border-color: var(--orange); }
+.stat-pill .num.blue   { color: var(--blue);   }
+.stat-pill .num.green  { color: var(--green);  }
+.stat-pill .num.orange { color: var(--orange); }
+
+.header-clock {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--teal);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════
+   COLUMN LABELS (STICKY)
+═══════════════════════════════════════════════ */
+.col-header {
+  background: #111827;
+  border-bottom: 2px solid var(--border);
+  display: grid;
+  grid-template-columns: 44px 130px 100px 150px 150px 150px 80px;
+  gap: 0;
+  padding: 6px 8px;
+  position: sticky;
+  top: 57px;
+  z-index: 90;
+}
+
+.col-header span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 4px;
+  display: flex; align-items: center;
+}
+
+.col-header .ch-checkin  { color: #64B5F6; }
+.col-header .ch-working  { color: #FFB74D; }
+.col-header .ch-complete { color: #81C784; }
+
+/* ═══════════════════════════════════════════════
+   MAIN GRID CONTAINER
+═══════════════════════════════════════════════ */
+.grid-container {
+  padding: 0;
+  overflow-x: auto;
+}
+
+/* ═══════════════════════════════════════════════
+   CLINIC ROW
+═══════════════════════════════════════════════ */
+.clinic-row {
+  display: grid;
+  grid-template-columns: 44px 130px 100px 150px 150px 150px 80px;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-row);
+  transition: background 0.2s;
+  align-items: center;
+  min-height: 52px;
+}
+
+.clinic-row:nth-child(even) { background: var(--bg-row-alt); }
+.clinic-row:hover { background: #1f2a3d; }
+
+.clinic-row.status-waiting  { border-right: 3px solid var(--blue);   }
+.clinic-row.status-working  { border-right: 3px solid var(--orange); }
+.clinic-row.status-complete { border-right: 3px solid var(--green);  background: #131d14 !important; }
+
+/* ─── Cell: Clinic Number ─── */
+.cell-clinic {
+  display: flex; align-items: center; justify-content: center;
+  padding: 6px 4px;
+}
+
+.clinic-badge {
+  width: 32px; height: 32px;
+  background: var(--bg-deep);
+  border: 1.5px solid var(--border-light);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.clinic-row.status-waiting  .clinic-badge { border-color: var(--blue);   color: var(--blue);   }
+.clinic-row.status-working  .clinic-badge { border-color: var(--orange); color: var(--orange); }
+.clinic-row.status-complete .clinic-badge { border-color: var(--green);  color: var(--green);  }
+
+/* ─── Cell: Patient Info ─── */
+.cell-patient {
+  padding: 4px 6px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+
+.cell-file {
+  padding: 4px 6px;
+}
+
+.cell-patient input,
+.cell-file input {
+  width: 100%;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  direction: rtl;
+}
+
+.cell-patient input:focus,
+.cell-file input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(61,189,173,0.15);
+}
+
+.cell-patient input::placeholder,
+.cell-file input::placeholder {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ─── Cell: Time Stage ─── */
+.cell-time {
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.time-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.time-input {
+  width: 64px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  padding: 5px 6px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.time-input:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(61,189,173,0.15);
+}
+
+.time-input.filled-blue   { border-color: var(--blue);   color: #64B5F6; }
+.time-input.filled-orange { border-color: var(--orange); color: #FFB74D; }
+.time-input.filled-green  { border-color: var(--green);  color: #81C784; }
+
+.btn-now {
+  flex: 1;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.btn-now:active { transform: scale(0.96); }
+
+.btn-now.blue {
+  background: var(--blue-dark);
+  color: white;
+  border: 1px solid var(--blue);
+}
+.btn-now.blue:hover { background: var(--blue); box-shadow: 0 0 8px var(--blue-glow); }
+
+.btn-now.orange {
+  background: #7A3800;
+  color: white;
+  border: 1px solid var(--orange);
+}
+.btn-now.orange:hover { background: var(--orange-dark); box-shadow: 0 0 8px var(--orange-glow); }
+
+.btn-now.green {
+  background: var(--green-dark);
+  color: white;
+  border: 1px solid var(--green);
+}
+.btn-now.green:hover { background: #2E7D32; box-shadow: 0 0 8px var(--green-glow); }
+
+/* ─── Cell: Actions ─── */
+.cell-actions {
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-save {
+  width: 100%;
+  height: 28px;
+  background: linear-gradient(135deg, var(--teal), #2ea89a);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+
+.btn-save:hover { filter: brightness(1.15); box-shadow: 0 2px 8px rgba(61,189,173,0.4); }
+.btn-save:active { transform: scale(0.96); }
+
+.btn-new {
+  width: 100%;
+  height: 26px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-new:hover {
+  background: var(--bg-deep);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ─── TAT Mini Display inside row ─── */
+.tat-display {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.tat-display .tat-val {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tat-display .tat-val.good { color: #81C784; }
+.tat-display .tat-val.warn { color: #FFB74D; }
+.tat-display .tat-val.bad  { color: #EF9A9A; }
+
+/* ═══════════════════════════════════════════════
+   TOAST NOTIFICATION
+═══════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toast.success { border-color: var(--green); }
+.toast.error   { border-color: var(--red);   }
+.toast.info    { border-color: var(--blue);  }
+
+@keyframes toastIn  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+/* ═══════════════════════════════════════════════
+   SAVING INDICATOR
+═══════════════════════════════════════════════ */
+.saving-indicator {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin-left: 4px;
+  transition: background 0.3s;
+}
+
+.saving-indicator.active { background: var(--orange); animation: pulse 0.8s infinite; }
+.saving-indicator.done   { background: var(--green); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER STATUS BAR
+═══════════════════════════════════════════════ */
+.footer-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
+  z-index: 100;
+}
+
+.footer-bar .status-text { display: flex; align-items: center; gap: 6px; }
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .col-header,
+  .clinic-row {
+    grid-template-columns: 40px 120px 90px 140px 140px 140px 75px;
+  }
+  .header-stats { display: none; }
+}
+
+@media (max-width: 680px) {
+  .col-header { display: none; }
+  .clinic-row {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    padding: 8px;
+    gap: 6px;
+    border-bottom: 2px solid var(--border);
+  }
+  .cell-clinic {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-icon">A</div>
+    <div class="brand-text">
+      <div class="brand-name">APEXCARE</div>
+      <div class="brand-sub">مراقبة تدفق المرضى — TAT Monitor</div>
+    </div>
+  </div>
+  
+  <div class="header-stats">
+    <div class="stat-pill blue">
+      <span>مرضى اليوم</span>
+      <span class="num blue" id="statTotal">—</span>
+    </div>
+    <div class="stat-pill green">
+      <span>مكتملون</span>
+      <span class="num green" id="statDone">—</span>
+    </div>
+    <div class="stat-pill orange">
+      <span>متوسط TAT</span>
+      <span class="num orange" id="statAvgTAT">—</span>
+      <span>د</span>
+    </div>
+  </div>
+  
+  <div class="header-clock" id="liveClock">--:--:--</div>
+</header>
+
+<!-- ═══ COLUMN LABELS ═══ -->
+<div class="col-header">
+  <span>#</span>
+  <span>اسم المريض</span>
+  <span>رقم الملف</span>
+  <span class="ch-checkin">⬤ تسجيل الدخول</span>
+  <span class="ch-working">⬤ جاري العمل</span>
+  <span class="ch-complete">⬤ تم الاكتمال</span>
+  <span>الإجراء</span>
+</div>
+
+<!-- ═══ CLINIC GRID ═══ -->
+<div class="grid-container" id="clinicGrid">
+  <!-- Rows injected by JS -->
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<div class="footer-bar">
+  <div class="status-text">
+    <div class="saving-indicator" id="savingDot"></div>
+    <span id="statusMsg">جاهز للعمل</span>
+  </div>
+  <div>
+    <span style="color: var(--teal); font-weight:600;">APEXCARE</span>
+    &nbsp;|&nbsp; Clinic Flow Monitor v2.0
+    &nbsp;|&nbsp; <span id="footerDate">—</span>
+  </div>
+</div>
+
+<!-- ═══ TOAST CONTAINER ═══ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+const CLINIC_COUNT = 13;
+
+// ─── Build clinic rows ──────────────────────────
+function buildGrid() {
+  const grid = document.getElementById('clinicGrid');
+  grid.innerHTML = '';
+  
+  for (let i = 1; i <= CLINIC_COUNT; i++) {
+    grid.appendChild(buildRow(i));
+  }
+}
+
+function buildRow(num) {
+  const row = document.createElement('div');
+  row.className = 'clinic-row';
+  row.id = `row-${num}`;
+  row.innerHTML = `
+    <!-- Clinic Badge -->
+    <div class="cell-clinic">
+      <div class="clinic-badge" id="badge-${num}">${num}</div>
+    </div>
+    
+    <!-- Patient Name -->
+    <div class="cell-patient">
+      <input type="text" id="name-${num}" placeholder="اسم المريض" 
+        oninput="onFieldChange(${num})" autocomplete="off">
+    </div>
+    
+    <!-- File Number -->
+    <div class="cell-file">
+      <input type="text" id="file-${num}" placeholder="رقم الملف"
+        oninput="onFieldChange(${num})" autocomplete="off">
+    </div>
+    
+    <!-- Check-in Time -->
+    <div class="cell-time">
+      <div class="time-row">
+        <input type="text" class="time-input" id="t1-${num}" placeholder="--:--"
+          maxlength="5" oninput="formatTimeInput(this, ${num}, 1)" autocomplete="off">
+        <button class="btn-now blue" onclick="stampNow(${num}, 1)">▶ الآن</button>
+      </div>
+    </div>
+    
+    <!-- Working Time -->
+    <div class="cell-time">
+      <div class="time-row">
+        <input type="text" class="time-input" id="t2-${num}" placeholder="--:--"
+          maxlength="5" oninput="formatTimeInput(this, ${num}, 2)" autocomplete="off">
+        <button class="btn-now orange" onclick="stampNow(${num}, 2)">▶ الآن</button>
+      </div>
+    </div>
+    
+    <!-- Complete Time -->
+    <div class="cell-time">
+      <div class="time-row">
+        <input type="text" class="time-input" id="t3-${num}" placeholder="--:--"
+          maxlength="5" oninput="formatTimeInput(this, ${num}, 3)" autocomplete="off">
+        <button class="btn-now green" onclick="stampNow(${num}, 3)">▶ الآن</button>
+      </div>
+      <div class="tat-display" id="tat-${num}"></div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="cell-actions">
+      <button class="btn-save" onclick="saveRow(${num})">💾 حفظ</button>
+      <button class="btn-new" onclick="clearRow(${num})">✕ جديد</button>
+    </div>
+  `;
+  return row;
+}
+
+// ─── Live Clock ─────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('liveClock').textContent = `${h}:${m}:${s}`;
+  
+  const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const d = now.getDate();
+  const mo = now.getMonth()+1;
+  const yr = now.getFullYear();
+  document.getElementById('footerDate').textContent = 
+    `${days[now.getDay()]}  ${d}/${mo}/${yr}`;
+}
+
+// ─── Stamp current time ─────────────────────────
+function stampNow(num, stage) {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const val = `${h}:${m}`;
+  const input = document.getElementById(`t${stage}-${num}`);
+  input.value = val;
+  applyTimeColor(input, stage);
+  updateRowStatus(num);
+  recalcTAT(num);
+}
+
+// ─── Format time input as HH:MM ─────────────────
+function formatTimeInput(el, num, stage) {
+  let v = el.value.replace(/[^0-9]/g,'');
+  if (v.length > 2) v = v.slice(0,2) + ':' + v.slice(2,4);
+  el.value = v;
+  if (v.length === 5) {
+    applyTimeColor(el, stage);
+    updateRowStatus(num);
+    recalcTAT(num);
+  }
+}
+
+function applyTimeColor(el, stage) {
+  el.classList.remove('filled-blue','filled-orange','filled-green');
+  if (el.value.length === 5) {
+    if (stage === 1) el.classList.add('filled-blue');
+    if (stage === 2) el.classList.add('filled-orange');
+    if (stage === 3) el.classList.add('filled-green');
+  }
+}
+
+// ─── On field change (name/file) ─────────────────
+function onFieldChange(num) {
+  updateRowStatus(num);
+}
+
+// ─── Update row visual status ────────────────────
+function updateRowStatus(num) {
+  const row = document.getElementById(`row-${num}`);
+  const t1  = document.getElementById(`t1-${num}`).value;
+  const t2  = document.getElementById(`t2-${num}`).value;
+  const t3  = document.getElementById(`t3-${num}`).value;
+  
+  row.classList.remove('status-waiting','status-working','status-complete');
+  if (t3.length === 5)      row.classList.add('status-complete');
+  else if (t2.length === 5) row.classList.add('status-working');
+  else if (t1.length === 5) row.classList.add('status-waiting');
+}
+
+// ─── Recalculate TAT live ────────────────────────
+function recalcTAT(num) {
+  const t1 = document.getElementById(`t1-${num}`).value;
+  const t2 = document.getElementById(`t2-${num}`).value;
+  const t3 = document.getElementById(`t3-${num}`).value;
+  const tatEl = document.getElementById(`tat-${num}`);
+  
+  if (t1.length !== 5 || t3.length !== 5) { tatEl.innerHTML = ''; return; }
+  
+  const totalMin = minutesBetween(t1, t3);
+  if (totalMin === null) { tatEl.innerHTML = ''; return; }
+  
+  let cls = totalMin <= 20 ? 'good' : totalMin <= 40 ? 'warn' : 'bad';
+  let waitMin = (t2.length === 5) ? minutesBetween(t1, t2) : null;
+  let svcMin  = (t2.length === 5 && t3.length === 5) ? minutesBetween(t2, t3) : null;
+  
+  tatEl.innerHTML = `
+    <span class="tat-val ${cls}">${totalMin}د</span>
+    ${waitMin !== null ? `<span style="color:var(--text-muted)"> انتظار ${waitMin}د</span>` : ''}
+  `;
+}
+
+function minutesBetween(t1, t2) {
+  try {
+    const [h1,m1] = t1.split(':').map(Number);
+    const [h2,m2] = t2.split(':').map(Number);
+    const diff = (h2*60+m2) - (h1*60+m1);
+    return diff >= 0 ? diff : diff + 1440;
+  } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════════════════
+//  ⚙️  ضع رابط Web App من Google Apps Script هنا
+//  Deploy → New Deployment → Web App → انسخ الـ URL
+// ══════════════════════════════════════════════════════
+const GAS_URL = "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+// ─── Save row to Google Sheets ───────────────────
+async function saveRow(num) {
+  const name = document.getElementById(`name-${num}`).value.trim();
+  const file = document.getElementById(`file-${num}`).value.trim();
+  const t1   = document.getElementById(`t1-${num}`).value;
+  const t2   = document.getElementById(`t2-${num}`).value;
+  const t3   = document.getElementById(`t3-${num}`).value;
+
+  if (!name && !file && !t1) {
+    showToast('⚠️ أدخل بيانات المريض أولاً', 'error');
+    return;
+  }
+
+  if (GAS_URL === "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE") {
+    showToast('⚠️ ضع رابط Apps Script في متغير GAS_URL', 'error');
+    return;
+  }
+
+  setSaving(true);
+  setStatus('جاري الحفظ...');
+
+  const params = new URLSearchParams({
+    action:       'savePatientRecord',
+    clinicNumber:  num,
+    patientName:   name,
+    fileNumber:    file,
+    checkinTime:   t1,
+    startTime:     t2,
+    completeTime:  t3
+  });
+
+  try {
+    const res  = await fetch(`${GAS_URL}?${params}`);
+    const json = await res.json();
+    setSaving(false, true);
+    if (json.success) {
+      showToast(`✅ ${json.message}`, 'success');
+      setStatus(json.message);
+      loadSummary();
+      updateRowStatus(num);
+    } else {
+      showToast(`❌ ${json.message}`, 'error');
+      setStatus('خطأ في الحفظ');
+    }
+  } catch(e) {
+    setSaving(false);
+    showToast('❌ فشل الاتصال — تحقق من GAS_URL', 'error');
+    setStatus('فشل الاتصال');
+    console.error(e);
+  }
+}
+
+// ─── Load summary stats ──────────────────────────
+async function loadSummary() {
+  if (GAS_URL === "YOUR_APPS_SCRIPT_WEB_APP_URL_HERE") return;
+  try {
+    const res  = await fetch(`${GAS_URL}?action=getTodaySummary`);
+    const json = await res.json();
+    if (json.success) {
+      document.getElementById('statTotal').textContent  = json.totalPatients;
+      document.getElementById('statDone').textContent   = json.completedPatients;
+      document.getElementById('statAvgTAT').textContent = json.avgTAT > 0 ? json.avgTAT : '—';
+    }
+  } catch(e) { console.warn('Summary load failed', e); }
+}
+
+// ─── UI Helpers ──────────────────────────────────
+function setSaving(active, done = false) {
+  const dot = document.getElementById('savingDot');
+  dot.classList.remove('active','done');
+  if (active) dot.classList.add('active');
+  else if (done) {
+    dot.classList.add('done');
+    setTimeout(() => dot.classList.remove('done'), 3000);
+  }
+}
+
+function setStatus(msg) {
+  document.getElementById('statusMsg').textContent = msg;
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) container.removeChild(toast); }, 3100);
+}
+
+// ─── Init ────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildGrid();
+  updateClock();
+  setInterval(updateClock, 1000);
+  loadSummary();
+  setInterval(loadSummary, 60000);
+});
+</script>
+</body>
+</html>
